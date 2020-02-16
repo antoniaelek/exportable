@@ -6,11 +6,30 @@ using System.Resources;
 using Exportable.Attribute;
 using Exportable.InternalModels;
 using Exportable.Models;
+using NPOI.SS.UserModel;
 
 namespace Exportable.Helpers
 {
     internal static class MetadataHelper
     {
+        public static void SetHyperlink(this ICell cell, ISheet sheet, Metadata property, object propValue)
+        {
+            var createHelper = sheet.Workbook.GetCreationHelper();
+            var link = createHelper.CreateHyperlink(HyperlinkType.Document);
+            link.Address = $"_{property.ExcelReferenceTo}_{Convert.ToString(propValue)}";
+            cell.Hyperlink = link;
+        }
+
+        public static void SetName(this ICell cell, ISheet sheet, Metadata property, object propValue)
+        {
+            var namedCell = sheet.Workbook.CreateName();
+            namedCell.NameName = $"_{property.ExcelName}_{Convert.ToString(propValue)}";
+
+            var c = (char)('A' + cell.ColumnIndex);
+            var r = cell.RowIndex + 1;
+            namedCell.RefersToFormula = $"'{sheet.SheetName}'!${c}${r}";
+        }
+
         public static IList<Metadata> GetImportableMetadatas(Type type)
         {
             var exportableMetadatas = new List<Metadata>();

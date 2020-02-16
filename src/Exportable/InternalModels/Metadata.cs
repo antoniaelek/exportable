@@ -9,6 +9,8 @@ namespace Exportable.InternalModels
         public FieldValueType FieldValueType { get; set; }
         public string Name { get; internal set; }
         public string DefaultForNullOrInvalidValues { get; set; }
+        public string ExcelName { get; set; }
+        public string ExcelReferenceTo { get; set; }
 
         public Metadata()
         {

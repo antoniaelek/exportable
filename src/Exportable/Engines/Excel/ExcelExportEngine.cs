@@ -43,7 +43,7 @@ namespace Exportable.Engines.Excel
             _sheets.Add(new KeyValuePair<string, object>(sheetName, data));
             return sheetName;
         }
-        
+
         public string AddData<TModel>(IEnumerable<TModel> data, string sheetName) where TModel : class
         {
             _sheets.Add(new KeyValuePair<string, object>(sheetName, data));
@@ -91,19 +91,19 @@ namespace Exportable.Engines.Excel
 
         public MemoryStream Export()
         {
-            if(ExcelVersion == ExcelVersion.XLSX)
+            if (ExcelVersion == ExcelVersion.XLSX)
                 ExcelXlsx = new XSSFWorkbook();
 
             if (ExcelVersion == ExcelVersion.XLS)
                 ExcelXls = new HSSFWorkbook();
-            
+
 
             foreach (var sheet in _sheets)
             {
                 CreateSheet(sheet);
                 AddDataToSheet(sheet);
             }
-            
+
             var memoryStream = new MemoryStream();
             Write(ref memoryStream);
 
@@ -118,7 +118,7 @@ namespace Exportable.Engines.Excel
             {
                 memoryStream.Position = 0;
                 return memoryStream;
-                
+
             }
 
             //ExcelXls.Write(memoryStream);
@@ -128,10 +128,10 @@ namespace Exportable.Engines.Excel
         public void Export(string path)
         {
             var fileExtension = Path.GetExtension(path);
-            if(string.IsNullOrWhiteSpace(fileExtension))
+            if (string.IsNullOrWhiteSpace(fileExtension))
                 throw new Exception(ErrorMessage.FileExtensionNotProvided);
 
-            if(!fileExtension.Equals(".xls") && !fileExtension.Equals(".xlsx"))
+            if (!fileExtension.Equals(".xls") && !fileExtension.Equals(".xlsx"))
                 throw new Exception(string.Format(ErrorMessage.InvalidFileExtension, fileExtension));
 
             var excelInMemory = Export();
@@ -167,7 +167,7 @@ namespace Exportable.Engines.Excel
             }
 
             //Check excel version
-            if(ExcelVersion!= ExcelVersion.XLS && ExcelVersion!= ExcelVersion.XLSX)
+            if (ExcelVersion != ExcelVersion.XLS && ExcelVersion != ExcelVersion.XLSX)
                 errors.Add("Excel Version", ErrorMessage.Excel_BadVersion);
 
             return errors;
@@ -177,7 +177,7 @@ namespace Exportable.Engines.Excel
         {
             return this;
         }
-        
+
 
 
         private void CreateSheet(KeyValuePair<string, object> excelSheet)
@@ -251,6 +251,18 @@ namespace Exportable.Engines.Excel
                         fila.GetCell(cellCount).SetCellValue("");
                         cellCount++;
                         continue;
+                    }
+
+                    // Set name for cell
+                    if (!string.IsNullOrWhiteSpace(property.ExcelName))
+                    {
+                        fila.GetCell(cellCount).SetName(sheet, property, propValue);
+                    }
+
+                    // Set link to named cell
+                    if (!string.IsNullOrWhiteSpace(property.ExcelReferenceTo))
+                    {
+                        fila.GetCell(cellCount).SetHyperlink(sheet, property, propValue);
                     }
 
                     switch (property.FieldValueType)
@@ -351,7 +363,7 @@ namespace Exportable.Engines.Excel
                         continue;
 
                     //Set column name in runtime and skip to next item
-                    if (newColumnsNames!=null && newColumnsNames.ContainsKey(property.Name))
+                    if (newColumnsNames != null && newColumnsNames.ContainsKey(property.Name))
                         exportableAttribute.HeaderName = newColumnsNames[property.Name];
 
                     //Try to get header's name from resource file
@@ -400,7 +412,7 @@ namespace Exportable.Engines.Excel
             var exportableMetadatas = new List<Metadata>();
             var exportableWithoutMetadata = new List<Metadata>();
             HashSet<string> ignoredColumns = null;
-            
+
             if (_columnsToIgnore.ContainsKey(sheetName))
                 ignoredColumns = _columnsToIgnore[sheetName];
 
@@ -424,7 +436,9 @@ namespace Exportable.Engines.Excel
                             Position = exportableAttribute.Position,
                             Format = exportableAttribute.Format,
                             FieldValueType = exportableAttribute.TypeValue,
-                            DefaultForNullOrInvalidValues = string.Empty
+                            DefaultForNullOrInvalidValues = string.Empty,
+                            ExcelName = exportableAttribute.ExcelName,
+                            ExcelReferenceTo = exportableAttribute.ExcelReferenceTo,
                         });
                 }
                 else

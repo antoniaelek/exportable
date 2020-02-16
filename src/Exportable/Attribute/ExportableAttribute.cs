@@ -46,6 +46,16 @@ namespace Exportable.Attribute
         }
 
         /// <summary>
+        /// Cell name in Excel
+        /// </summary>
+        public string ExcelName { get; set; }
+
+        /// <summary>
+        /// Reference to named Excel cell
+        /// </summary>
+        public string ExcelReferenceTo { get; set; }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public ExportableAttribute()
@@ -93,6 +103,16 @@ namespace Exportable.Attribute
             TypeValue = typeValue;
             Format = format;
         }
-        
+
+        public ExportableAttribute(int position, string headerName, FieldValueType typeValue, string format, string excelName, string excelReferenceTo)
+        {
+            Position = position;
+            HeaderName = headerName;
+            TypeValue = typeValue;
+            Format = format;
+            ExcelName = excelName;
+            ExcelReferenceTo = excelReferenceTo;
+        }
+
     }
 }
