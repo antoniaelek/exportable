@@ -7,7 +7,7 @@
         public short FontSize { get; set; }
         public string BorderColor { get; set; }
         public string BackColor { get; set; }
-
+        public bool Freeze { get; set; }
 
 
         public RowStyle()
@@ -15,7 +15,7 @@
 
         }
 
-        public RowStyle(string fontColor, string fontName, short fontSize, string borderColor, string backColor)
+        public RowStyle(string fontColor, string fontName, short fontSize, string borderColor, string backColor, bool freeze = false)
         {
 
             FontColor = fontColor;
@@ -23,7 +23,7 @@
             FontSize = fontSize;
             BorderColor = borderColor;
             BackColor = backColor;
-
+            Freeze = freeze;
         }
     }
 }

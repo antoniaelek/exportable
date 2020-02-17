@@ -68,12 +68,15 @@ namespace Exportable.Helpers
             short defaultFontSize = 11;
             var defaultBorderColor = "#000000";
             var defaultBackColor = "#888888";
+
             foreach (var ct in type.GetCustomAttributes(true))
             {
                 if (ct != null && ct.GetType() == typeof(ExportableExcelHeaderAttribute))
                 {
                     ExportableExcelHeaderAttribute exportableAttribute = (ct as ExportableExcelHeaderAttribute);
                     rowStyle = new RowStyle();
+
+                    rowStyle.Freeze = exportableAttribute.FreezeHeader;
 
                     if (!string.IsNullOrWhiteSpace(exportableAttribute.FontName))
                         rowStyle.FontName = exportableAttribute.FontName;
@@ -119,11 +122,11 @@ namespace Exportable.Helpers
         {
             foreach (var ct in type.GetCustomAttributes(true))
             {
-                if (ct != null && ct.GetType() == typeof (ImportableExcelHeaderAttribute))
+                if (ct != null && ct.GetType() == typeof(ImportableExcelHeaderAttribute))
                 {
                     return (ct as ImportableExcelHeaderAttribute).GetSheetName();
                 }
-                    
+
             }
 
             return null;

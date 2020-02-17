@@ -199,6 +199,10 @@ namespace Exportable.Engines.Excel
                 cellCount += 1;
             }
 
+            if (headerFormat.Freeze)
+            {
+                hoja.CreateFreezePane(0, 1);
+            }
         }
 
         private void AddDataToSheet(KeyValuePair<string, object> excelSheet)

@@ -34,6 +34,11 @@ namespace Exportable.Attribute
         public string BackColor { get; set; }
 
         /// <summary>
+        /// Freeze Excel header
+        /// </summary>
+        public bool FreezeHeader { get; set; }
+
+        /// <summary>
         /// Constructor
         /// </summary>
         public ExportableExcelHeaderAttribute()
