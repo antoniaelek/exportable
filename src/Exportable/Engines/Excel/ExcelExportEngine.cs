@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -231,9 +232,12 @@ namespace Exportable.Engines.Excel
             int rowCount = 1;
             foreach (var row in MetadataHelper.GetArrayData(excelSheet.Value))
             {
+                int step = 1;
+
                 //All cells
                 int cellCount = 0;
-                IRow fila = sheet.CreateRow(rowCount);
+                var rows = new Dictionary<int, IRow>() { { rowCount, sheet.CreateRow(rowCount) } };
+                IRow fila = rows[rowCount];
 
                 //Order properties by position attribute
                 foreach (var property in customProperties.OrderBy(cp => cp.Position))
@@ -252,79 +256,153 @@ namespace Exportable.Engines.Excel
                         cellCount++;
                         continue;
                     }
-
-                    // Set name for cell
-                    if (!string.IsNullOrWhiteSpace(property.ExcelName))
+                    else if (propValue as string is null && propValue is IEnumerable elements)
                     {
-                        fila.GetCell(cellCount).SetName(sheet, property, propValue);
-                    }
-
-                    // Set link to named cell
-                    if (!string.IsNullOrWhiteSpace(property.ExcelReferenceTo))
-                    {
-                        fila.GetCell(cellCount).SetHyperlink(sheet, property, propValue);
-                    }
-
-                    switch (property.FieldValueType)
-                    {
-                        case FieldValueType.Date:
-                            var dateCellValue = Convert.ToDateTime(propValue);
-                            fila.GetCell(cellCount).SetCellValue(dateCellValue);
-                            fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == property.Position).Value;
-                            break;
-
-                        case FieldValueType.Numeric:
-                            var numericCellValue = Convert.ToDouble(propValue);
-                            fila.GetCell(cellCount).SetCellValue(numericCellValue);
-                            fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == property.Position).Value;
-                            fila.GetCell(cellCount).SetCellType(CellType.Numeric);
-                            break;
-
-                        case FieldValueType.Text:
-                            var stringCellValue = propValue.ToString();
-                            fila.GetCell(cellCount).SetCellValue(stringCellValue);
-                            fila.GetCell(cellCount).SetCellType(CellType.String);
-                            break;
-
-                        case FieldValueType.Bool:
-                            var boolCellValue = Convert.ToBoolean(propValue);
-                            fila.GetCell(cellCount).SetCellValue(boolCellValue);
-                            fila.GetCell(cellCount).SetCellType(CellType.Boolean);
-                            break;
-
-
-                        case FieldValueType.Any:
-                            if (propValue is bool)
+                        int i = 0;
+                        foreach (var val in elements)
+                        {
+                            if (!rows.TryGetValue(rowCount + i, out IRow currRow))
                             {
-                                var cellValue = Convert.ToBoolean(propValue);
-                                fila.GetCell(cellCount).SetCellValue(cellValue);
+                                rows[rowCount + i] = sheet.CreateRow(rowCount + i);
                             }
-                            else if (Information.IsDate(propValue))
+
+                            currRow = rows[rowCount + i];
+                            currRow.CreateCell(cellCount);
+
+                            if (val is null)
                             {
-                                var cellValue = Convert.ToDateTime(propValue);
-                                fila.GetCell(cellCount).SetCellValue(cellValue);
-                                fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == -2).Value;
+                                fila.GetCell(cellCount).SetCellValue("");
                             }
-                            else if (Information.IsNumeric(propValue))
+                            else if (val is bool)
                             {
-                                var cellValue = Convert.ToDouble(propValue);
-                                fila.GetCell(cellCount).SetCellValue(cellValue);
-                                fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == -1).Value;
-                                fila.GetCell(cellCount).SetCellType(CellType.Numeric);
+                                currRow.GetCell(cellCount).SetCellValue(Convert.ToBoolean(val));
+                            }
+                            else if (Information.IsDate(val))
+                            {
+                                currRow.GetCell(cellCount).SetCellValue(Convert.ToDateTime(val));
+                                currRow.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == -2).Value;
+                            }
+                            else if (Information.IsNumeric(val))
+                            {
+                                currRow.GetCell(cellCount).SetCellValue(Convert.ToDouble(val));
+                                currRow.GetCell(cellCount).SetCellType(CellType.Numeric);
                             }
                             else
                             {
-                                //https://github.com/vvenegasv/exportable/issues/2
-                                //Thanks to nesreeen
-                                var cellValue = Convert.ToString(propValue);
-                                fila.GetCell(cellCount).SetCellValue(cellValue);
+                                currRow.GetCell(cellCount).SetCellValue(Convert.ToString(val));
                             }
-                            break;
+
+                            // Set name for cell
+                            if (!string.IsNullOrWhiteSpace(property.ExcelName))
+                            {
+                                currRow.GetCell(cellCount).SetName(sheet, property, val);
+                            }
+
+                            // Set link to named cell
+                            if (!string.IsNullOrWhiteSpace(property.ExcelReferenceTo))
+                            {
+                                currRow.GetCell(cellCount).SetHyperlink(sheet, property, val);
+                            }
+
+                            i++;
+                        }
+
+                        step = Math.Max(step, i);
+                    }
+                    else
+                    {
+                        switch (property.FieldValueType)
+                        {
+                            case FieldValueType.Date:
+                                var dateCellValue = Convert.ToDateTime(propValue);
+                                fila.GetCell(cellCount).SetCellValue(dateCellValue);
+                                fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == property.Position).Value;
+                                break;
+
+                            case FieldValueType.Numeric:
+                                var numericCellValue = Convert.ToDouble(propValue);
+                                fila.GetCell(cellCount).SetCellValue(numericCellValue);
+                                fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == property.Position).Value;
+                                fila.GetCell(cellCount).SetCellType(CellType.Numeric);
+                                break;
+
+                            case FieldValueType.Text:
+                                var stringCellValue = propValue.ToString();
+                                fila.GetCell(cellCount).SetCellValue(stringCellValue);
+                                fila.GetCell(cellCount).SetCellType(CellType.String);
+                                break;
+
+                            case FieldValueType.Bool:
+                                var boolCellValue = Convert.ToBoolean(propValue);
+                                fila.GetCell(cellCount).SetCellValue(boolCellValue);
+                                fila.GetCell(cellCount).SetCellType(CellType.Boolean);
+                                break;
+
+
+                            case FieldValueType.Any:
+                                if (propValue is bool)
+                                {
+                                    var cellValue = Convert.ToBoolean(propValue);
+                                    fila.GetCell(cellCount).SetCellValue(cellValue);
+                                }
+                                else if (Information.IsDate(propValue))
+                                {
+                                    var cellValue = Convert.ToDateTime(propValue);
+                                    fila.GetCell(cellCount).SetCellValue(cellValue);
+                                    fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == -2).Value;
+                                }
+                                else if (Information.IsNumeric(propValue))
+                                {
+                                    var cellValue = Convert.ToDouble(propValue);
+                                    fila.GetCell(cellCount).SetCellValue(cellValue);
+                                    fila.GetCell(cellCount).CellStyle = styles.FirstOrDefault(x => x.Key == -1).Value;
+                                    fila.GetCell(cellCount).SetCellType(CellType.Numeric);
+                                }
+                                else
+                                {
+                                    //https://github.com/vvenegasv/exportable/issues/2
+                                    //Thanks to nesreeen
+                                    var cellValue = Convert.ToString(propValue);
+                                    fila.GetCell(cellCount).SetCellValue(cellValue);
+                                }
+                                break;
+                        }
+
+                        // Set name for cell
+                        if (!string.IsNullOrWhiteSpace(property.ExcelName))
+                        {
+                            fila.GetCell(cellCount).SetName(sheet, property, propValue);
+                        }
+
+                        // Set link to named cell
+                        if (!string.IsNullOrWhiteSpace(property.ExcelReferenceTo))
+                        {
+                            fila.GetCell(cellCount).SetHyperlink(sheet, property, propValue);
+                        }
                     }
 
                     cellCount += 1;
                 }
-                rowCount += 1;
+
+                // Merge
+                if (step > 1)
+                {
+                    cellCount = 0;
+                    foreach (var property in customProperties.OrderBy(cp => cp.Position))
+                    {
+                        var propValue = row.GetType().GetProperty(property.Name).GetValue(row, null);
+
+                        if (propValue is string || propValue as IEnumerable is null)
+                        {
+                            rows[rowCount].GetCell(cellCount).CellStyle.VerticalAlignment = VerticalAlignment.Top;
+                            sheet.AddMergedRegion(new NPOI.SS.Util.CellRangeAddress(rowCount, rowCount + step - 1, cellCount, cellCount));
+                        }
+
+                        cellCount += 1;
+                    }
+                }
+
+                rowCount += step;
             }
 
             //Set autowidth
