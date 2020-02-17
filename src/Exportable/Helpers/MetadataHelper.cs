@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Resources;
+using System.Text;
 using Exportable.Attribute;
 using Exportable.InternalModels;
 using Exportable.Models;
@@ -16,18 +17,36 @@ namespace Exportable.Helpers
         {
             var createHelper = sheet.Workbook.GetCreationHelper();
             var link = createHelper.CreateHyperlink(HyperlinkType.Document);
-            link.Address = $"_{property.ExcelReferenceTo}_{Convert.ToString(propValue)}";
+            link.Address = $"_{property.ExcelReferenceTo}_{Convert.ToString(propValue).ToValidExcelRangeName()}";
             cell.Hyperlink = link;
         }
 
         public static void SetName(this ICell cell, ISheet sheet, Metadata property, object propValue)
         {
             var namedCell = sheet.Workbook.CreateName();
-            namedCell.NameName = $"_{property.ExcelName}_{Convert.ToString(propValue)}";
+            namedCell.NameName = $"_{property.ExcelName}_{Convert.ToString(propValue).ToValidExcelRangeName()}";
 
             var c = (char)('A' + cell.ColumnIndex);
             var r = cell.RowIndex + 1;
             namedCell.RefersToFormula = $"'{sheet.SheetName}'!${c}${r}";
+        }
+
+        private static string ToValidExcelRangeName(this string name)
+        {
+            var sb = new StringBuilder();
+            foreach (var c in name)
+            {
+                // letters, numbers, periods, and underscore characters
+                if (char.IsLetterOrDigit(c) || c == '.' || c == '_')
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append("_");
+                }
+            }
+            return sb.ToString();
         }
 
         public static IList<Metadata> GetImportableMetadatas(Type type)
